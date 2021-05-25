@@ -1,4 +1,3 @@
-#include "SPI.h"
 #include "Adafruit_GFX.h"
 #include "myILI9341.h"
 
