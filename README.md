@@ -10,7 +10,7 @@ Also, add 330 Ohm resistor in series with SPI SCK (D13) and MOSI (D11) and use a
 TFT DC is connected by default on D9 and TFT CS is connected on D10. MISO is connected on D12 but it's not used here.
 
 This library uses frame buffer to store frame in RAM so it uses a lot of RAM (~150k) and uses global refresh.
-Refresh rate is ~ 27FPS.
+Refresh rate is ~ 24FPS.
 
 TODO:
 - Fix rotation bug
