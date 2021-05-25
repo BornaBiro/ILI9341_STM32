@@ -93,6 +93,10 @@
 #define ILI9341_GREENYELLOW 0xAFE5  ///< 173, 255,  41
 #define ILI9341_PINK        0xFC18  ///< 255, 130, 198
 
+#ifndef _swap_int16_t
+#define _swap_int16_t(a, b) {int16_t t = a; a = b; b = t;}
+#endif
+
 static void MX_SPI1_Init(void);
 static void MX_DMA_Init(void);
 static uint8_t _frameBuffer[153600];
@@ -125,9 +129,6 @@ class Adafruit_ILI9341 : public Adafruit_GFX{
         
         private:
         int8_t _cs, _dc;
-        int16_t _width;
-        int16_t _height;
-        uint8_t rotation = 0;
 };
 
 #endif // _ADAFRUIT_ILI9341H_

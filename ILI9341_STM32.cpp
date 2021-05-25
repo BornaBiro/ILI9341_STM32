@@ -23,7 +23,7 @@ static SPI_HandleTypeDef hspi1;
 static DMA_HandleTypeDef hdma_spi1_tx;
 static volatile bool intFlag = false;
 
-Adafruit_ILI9341::Adafruit_ILI9341(int8_t _CS, int8_t _DC) : Adafruit_GFX(320, 240)
+Adafruit_ILI9341::Adafruit_ILI9341(int8_t _CS, int8_t _DC) : Adafruit_GFX(ILI9341_TFTWIDTH, ILI9341_TFTHEIGHT)
 {
     _dc = _DC;
     _cs = _CS;
@@ -83,30 +83,19 @@ void Adafruit_ILI9341::begin()
 void Adafruit_ILI9341::setRotation(uint8_t m)
 {
     rotation = m % 4; // can't be higher than 3
-    switch (rotation) {
-        case 0:
-            m = (MADCTL_MX | MADCTL_BGR);
-            _width  = ILI9341_TFTWIDTH;
-            _height = ILI9341_TFTHEIGHT;
-            break;
-        case 1:
-            m = (MADCTL_MV | MADCTL_BGR);
-            _width  = ILI9341_TFTHEIGHT;
-            _height = ILI9341_TFTWIDTH;
-            break;
-        case 2:
-            m = (MADCTL_MY | MADCTL_BGR);
-            _width  = ILI9341_TFTWIDTH;
-            _height = ILI9341_TFTHEIGHT;
-            break;
-        case 3:
-            m = (MADCTL_MX | MADCTL_MY | MADCTL_MV | MADCTL_BGR);
-            _width  = ILI9341_TFTHEIGHT;
-            _height = ILI9341_TFTWIDTH;
-            break;
+    switch (rotation)
+    {
+    case 0:
+    case 2:
+        _width = ILI9341_TFTWIDTH;
+        _height = ILI9341_TFTHEIGHT;
+        break;
+    case 1:
+    case 3:
+        _width = ILI9341_TFTHEIGHT;
+        _height = ILI9341_TFTWIDTH;
+        break;
     }
-
-    sendCommand(ILI9341_MADCTL, &m, 1);
 }
 
 void Adafruit_ILI9341::invertDisplay(bool invert)
@@ -152,8 +141,24 @@ uint8_t Adafruit_ILI9341::readcommand8(uint8_t commandByte, uint8_t index)
 
 void Adafruit_ILI9341::drawPixel(int16_t x, int16_t y, uint16_t color)
 {
-    if (x > 239 || x < 0) return;
-    if (y > 319 || y < 0) return;
+    if ((x > width() - 1) || x < 0) return;
+    if ((y > height() - 1) || y < 0) return;
+    
+    switch (rotation)
+    {
+    case 1:
+        _swap_int16_t(x, y);
+        x = height() - x - 1;
+        break;
+    case 2:
+        x = width() - x - 1;
+        y = height() - y - 1;
+        break;
+    case 3:
+        _swap_int16_t(x, y);
+        y = width() - y - 1;
+        break;
+    }
     
     x = x * 2;
     

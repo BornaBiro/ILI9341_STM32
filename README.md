@@ -13,5 +13,4 @@ This library uses frame buffer to store frame in RAM so it uses a lot of RAM (~1
 Refresh rate is ~ 24FPS.
 
 TODO:
-- Fix rotation bug
 - Use DMA instead Interrupts
