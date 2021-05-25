@@ -1,15 +1,14 @@
 #include "Adafruit_GFX.h"
-#include "myILI9341.h"
+#include "ILI9341_STM32.h"
 
-// For the Adafruit shield, these are the default.
 #define TFT_DC 9
 #define TFT_CS 10
 
-// Use hardware SPI (on Uno, #13, #12, #11) and the above for CS/DC
+// Use hardware SPI (D13 - SCK, D12 - MISO, D11 - MOSI)
 Adafruit_ILI9341 display = Adafruit_ILI9341(TFT_CS, TFT_DC);
 unsigned long t1, t2;
-void setup() {
-  // put your setup code here, to run once:
+void setup()
+{
   Serial.begin(115200);
   display.begin();
   display.fillRect(0, 0, 320, 240, ILI9341_WHITE);
@@ -19,11 +18,13 @@ void setup() {
   t1 = micros();
   display.display();
   t2 = micros();
+  
+  // Print out one frame time in mmicroseconds
   Serial.println(t2 - t1, DEC);
 }
 int k = 0;
-void loop() {
-  // put your main code here, to run repeatedly:
+void loop() 
+{
   display.clearDisplay();
   display.setCursor(0,0);
   display.setTextSize(4);

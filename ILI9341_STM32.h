@@ -1,35 +1,10 @@
 /*!
-* @file Adafruit_ILI9341.h
-*
+
 * This is the documentation for Adafruit's ILI9341 driver for the
 * Arduino platform.
 *
-* This library works with the Adafruit 2.8" Touch Shield V2 (SPI)
-*    http://www.adafruit.com/products/1651
-* Adafruit 2.4" TFT LCD with Touchscreen Breakout w/MicroSD Socket - ILI9341
-*    https://www.adafruit.com/product/2478
-* 2.8" TFT LCD with Touchscreen Breakout Board w/MicroSD Socket - ILI9341
-*    https://www.adafruit.com/product/1770
-* 2.2" 18-bit color TFT LCD display with microSD card breakout - ILI9340
-*    https://www.adafruit.com/product/1770
-* TFT FeatherWing - 2.4" 320x240 Touchscreen For All Feathers
-*    https://www.adafruit.com/product/3315
-*
-* These displays use SPI to communicate, 4 or 5 pins are required
-* to interface (RST is optional).
-*
-* Adafruit invests time and resources providing this open source code,
-* please support Adafruit and open-source hardware by purchasing
-* products from Adafruit!
-*
-*
-* This library depends on <a href="https://github.com/adafruit/Adafruit_GFX">
-* Adafruit_GFX</a> being present on your system. Please make sure you have
-* installed the latest version before using this library.
-*
 * Written by Limor "ladyada" Fried for Adafruit Industries.
-*
-* BSD license, all text here must be included in any redistribution.
+* Modified to work with STM32 Nucleo Board by Borna Biro
 *
 */
 
@@ -96,7 +71,6 @@
 
 #define ILI9341_GMCTRP1    0xE0     ///< Positive Gamma Correction
 #define ILI9341_GMCTRN1    0xE1     ///< Negative Gamma Correction
-//#define ILI9341_PWCTR6     0xFC
 
 // Color definitions
 #define ILI9341_BLACK       0x0000  ///<   0,   0,   0
@@ -119,12 +93,6 @@
 #define ILI9341_GREENYELLOW 0xAFE5  ///< 173, 255,  41
 #define ILI9341_PINK        0xFC18  ///< 255, 130, 198
 
-/**************************************************************************/
-/*!
-@brief Class to manage hardware interface with ILI9341 chipset (also seems to work with ILI9340)
-*/
-/**************************************************************************/
-
 static void MX_SPI1_Init(void);
 static void MX_DMA_Init(void);
 static uint8_t _frameBuffer[153600];
@@ -133,7 +101,7 @@ class Adafruit_ILI9341 : public Adafruit_GFX{
     public:
         Adafruit_ILI9341(int8_t _CS, int8_t _DC);
 
-        void    begin(uint32_t freq=0);
+        void    begin();
         void    setRotation(uint8_t r);
         void    invertDisplay(bool i);
         void    scrollTo(uint16_t y);
@@ -143,22 +111,20 @@ class Adafruit_ILI9341 : public Adafruit_GFX{
         void    fillScreen(uint16_t color);
         uint16_t color565(uint8_t red, uint8_t green, uint8_t blue);
 
-        // Transaction API not used by GFX
         void    setAddrWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
 
         uint8_t readcommand8(uint8_t reg, uint8_t index=0);
-        void    initSPI(uint32_t freq);
+        void    initSPI();
         void    sendCommand(uint8_t commandByte, uint8_t *dataBytes, int8_t numDataBytes);
         void    writeCommand(uint8_t cmd);
         void    SPI_WRITE16(uint16_t w);
         void    sendCommand(uint8_t commandByte, const uint8_t *dataBytes = NULL, uint8_t numDataBytes = 0);
         
         void    sendSpi(uint8_t _data);
-        void    sendSpiDMA(uint8_t *_data, uint16_t _size);
+        void    sendSpiBuffer(uint8_t *_data, uint16_t _size);
         
         private:
         int8_t _cs, _dc;
-        int     _rst = -1;
         int16_t _width;
         int16_t _height;
         uint8_t rotation = 0;

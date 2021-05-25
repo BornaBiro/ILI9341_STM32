@@ -1,56 +1,15 @@
 /*!
-* @file Adafruit_ILI9341.cpp
-*
-* @mainpage Adafruit ILI9341 TFT Displays
-*
-* @section intro_sec Introduction
 *
 * This is the documentation for Adafruit's ILI9341 driver for the
 * Arduino platform.
 *
-* This library works with the Adafruit 2.8" Touch Shield V2 (SPI)
-*    http://www.adafruit.com/products/1651
-*
-* Adafruit 2.4" TFT LCD with Touchscreen Breakout w/MicroSD Socket - ILI9341
-*    https://www.adafruit.com/product/2478
-*
-* 2.8" TFT LCD with Touchscreen Breakout Board w/MicroSD Socket - ILI9341
-*    https://www.adafruit.com/product/1770
-*
-* 2.2" 18-bit color TFT LCD display with microSD card breakout - ILI9340
-*    https://www.adafruit.com/product/1770
-*
-* TFT FeatherWing - 2.4" 320x240 Touchscreen For All Feathers
-*    https://www.adafruit.com/product/3315
-*
-* These displays use SPI to communicate, 4 or 5 pins are required
-* to interface (RST is optional).
-*
-* Adafruit invests time and resources providing this open source code,
-* please support Adafruit and open-source hardware by purchasing
-* products from Adafruit!
-*
-* @section dependencies Dependencies
-*
-* This library depends on <a href="https://github.com/adafruit/Adafruit_GFX">
-* Adafruit_GFX</a> being present on your system. Please make sure you have
-* installed the latest version before using this library.
-*
-* @section author Author
-*
 * Written by Limor "ladyada" Fried for Adafruit Industries.
-* Mmodified to work with STM32 Nucleo Board by Borna Biro
-*
-* @section license License
-*
-* BSD license, all text here must be included in any redistribution.
+* Modified to work with STM32 Nucleo Board by Borna Biro
 *
 */
 
-#include "myILI9341.h"
+#include "ILI9341_STM32.h"
 #include <limits.h>
-
-#define SPI_DEFAULT_FREQ  20000000  ///< Default SPI data clock frequency
 
 #define MADCTL_MY  0x80  ///< Bottom to top
 #define MADCTL_MX  0x40  ///< Right to left
@@ -98,46 +57,31 @@ static const uint8_t PROGMEM initcmd[] = {
   0x00                                   // End of list
 };
 
-/**************************************************************************/
-/*!
-    @brief   Initialize ILI9341 chip
-    Connects to the ILI9341 over SPI and sends initialization procedure commands
-    @param    freq  Desired SPI clock frequency
-*/
-/**************************************************************************/
-void Adafruit_ILI9341::begin(uint32_t freq) {
-  MX_DMA_Init();
-  MX_SPI1_Init();
-    if(!freq) freq = SPI_DEFAULT_FREQ;
-    initSPI(freq);
-
-    if(_rst < 0) {                     // If no hardware reset pin...
-        sendCommand(ILI9341_SWRESET); // Engage software reset
-        delay(150);
-    }
+void Adafruit_ILI9341::begin()
+{
+    MX_DMA_Init();
+    MX_SPI1_Init();
+    initSPI();
+    sendCommand(ILI9341_SWRESET); // Engage software reset
+    delay(150);
     
     uint8_t        cmd, x, numArgs;
     const uint8_t *addr = initcmd;
-    while((cmd = pgm_read_byte(addr++)) > 0) {
+    while((cmd = pgm_read_byte(addr++)) > 0)
+    {
         x = pgm_read_byte(addr++);
         numArgs = x & 0x7F;
         sendCommand(cmd, addr, numArgs);
         addr += numArgs;
         if(x & 0x80) delay(150);
     }
-
+    sendCommand(ILI9341_NORON);
     _width  = ILI9341_TFTWIDTH;
     _height = ILI9341_TFTHEIGHT;
 }
 
-
-/**************************************************************************/
-/*!
-    @brief   Set origin of (0,0) and orientation of TFT display
-    @param   m  The index for rotation, from 0-3 inclusive
-*/
-/**************************************************************************/
-void Adafruit_ILI9341::setRotation(uint8_t m) {
+void Adafruit_ILI9341::setRotation(uint8_t m)
+{
     rotation = m % 4; // can't be higher than 3
     switch (rotation) {
         case 0:
@@ -165,23 +109,13 @@ void Adafruit_ILI9341::setRotation(uint8_t m) {
     sendCommand(ILI9341_MADCTL, &m, 1);
 }
 
-/**************************************************************************/
-/*!
-    @brief   Enable/Disable display color inversion
-    @param   invert True to invert, False to have normal color
-*/
-/**************************************************************************/
-void Adafruit_ILI9341::invertDisplay(bool invert) {
+void Adafruit_ILI9341::invertDisplay(bool invert)
+{
     sendCommand(invert ? ILI9341_INVON : ILI9341_INVOFF);
 }
 
-/**************************************************************************/
-/*!
-    @brief   Scroll display memory
-    @param   y How many pixels to scroll display by
-*/
-/**************************************************************************/
-void Adafruit_ILI9341::scrollTo(uint16_t y) {
+void Adafruit_ILI9341::scrollTo(uint16_t y)
+{
     sendCommand(ILI9341_VSCRSADD, (uint8_t*) y, 2);
 }
 
@@ -194,8 +128,8 @@ void Adafruit_ILI9341::scrollTo(uint16_t y) {
     @param   h   Height of rectangle
 */
 /**************************************************************************/
-void Adafruit_ILI9341::setAddrWindow(
-  uint16_t x1, uint16_t y1, uint16_t w, uint16_t h) {
+void Adafruit_ILI9341::setAddrWindow(uint16_t x1, uint16_t y1, uint16_t w, uint16_t h)
+{
     uint16_t x2 = (x1 + w - 1),
              y2 = (y1 + h - 1);
     writeCommand(ILI9341_CASET); // Column address set
@@ -207,19 +141,12 @@ void Adafruit_ILI9341::setAddrWindow(
     writeCommand(ILI9341_RAMWR); // Write to RAM
 }
 
-/**************************************************************************/
-/*!
-    @brief  Read 8 bits of data from ILI9341 configuration memory. NOT from RAM!
-            This is highly undocumented/supported, it's really a hack but kinda works?
-    @param    commandByte  The command register to read data from
-    @param    index  The byte index into the command to read from
-    @return   Unsigned 8-bit data read from ILI9341 register
- */
-/**************************************************************************/
-uint8_t Adafruit_ILI9341::readcommand8(uint8_t commandByte, uint8_t index) {
+uint8_t Adafruit_ILI9341::readcommand8(uint8_t commandByte, uint8_t index)
+{
   uint8_t data = 0x10 + index;
   sendCommand(0xD9, &data, 1); // Set Index Register
   //return readcommand8my(commandByte);
+  return 0;
   
 }
 
@@ -236,17 +163,12 @@ void Adafruit_ILI9341::drawPixel(int16_t x, int16_t y, uint16_t color)
 
 void Adafruit_ILI9341::display()
 {
-    //SPI.beginTransaction(SPISettings(SPI_DEFAULT_FREQ, MSBFIRST, SPI_MODE0));
     digitalWrite(_cs, LOW);
-    setAddrWindow(0, 0, 240, 320);
-    //for (int i = 0; i < 5; i++)
-    //{
-    //    SPI.transfer(_frameBuffer+(i*30720), 30720);
-    //}
-    //SPI.endTransaction();
+    //setAddrWindow(0, 0, 240, 320);
+    writeCommand(ILI9341_RAMWR); // Write to RAM
     for (int i = 0; i < 5; i++)
     {
-        sendSpiDMA(_frameBuffer+(i*30720), 30720);
+        sendSpiBuffer(_frameBuffer+(i*30720), 30720);
     }
 }
 
@@ -266,78 +188,57 @@ uint16_t Adafruit_ILI9341::color565(uint8_t red, uint8_t green, uint8_t blue)
 }
 
 /*****************************LOW LEVEL STUFF******************************/
-void Adafruit_ILI9341::initSPI(uint32_t freq)
+void Adafruit_ILI9341::initSPI()
 {
   pinMode(_cs, OUTPUT);
   digitalWrite(_cs, HIGH); // Deselect
   pinMode(_dc, OUTPUT);
   digitalWrite(_dc, HIGH); // Data mode
-  
-  //SPI.begin();
+ 
 }
 
 void Adafruit_ILI9341::sendCommand(uint8_t commandByte, uint8_t *dataBytes, int8_t numDataBytes)
 {
-  //SPI.beginTransaction(SPISettings(SPI_DEFAULT_FREQ, MSBFIRST, SPI_MODE0));
   digitalWrite(_cs, LOW);
-
   digitalWrite(_dc, LOW);
-  //SPI.transfer(commandByte);
   sendSpi(commandByte);
 
   digitalWrite(_dc, HIGH);
-  for (int i = 0; i < numDataBytes; i++) {
-  //  if ((connection == TFT_PARALLEL) && tft8.wide) {
-  //    SPI_WRITE16(*(uint16_t *)dataBytes);
-  //    dataBytes += 2;
-  //  } else {
-      //SPI.transfer(*dataBytes); // Send the data bytes
+  for (int i = 0; i < numDataBytes; i++)
+  {
       sendSpi(*dataBytes);
       dataBytes++;
-  //  }
   }
 
   digitalWrite(_cs, HIGH);
-  //SPI.endTransaction();
 }
 
 void Adafruit_ILI9341::writeCommand(uint8_t cmd)
 {
   digitalWrite(_dc, LOW);
-  //SPI.transfer(cmd);
   sendSpi(cmd);
   digitalWrite(_dc, HIGH);
 }
 
 void Adafruit_ILI9341::SPI_WRITE16(uint16_t w)
 {
-    //SPI.transfer(w >> 8);
-    //SPI.transfer(w);
     sendSpi(w >> 8);
     sendSpi(w);
 }
 
 void Adafruit_ILI9341::sendCommand(uint8_t commandByte, const uint8_t *dataBytes, uint8_t numDataBytes)
 {
-  //SPI.beginTransaction(SPISettings(SPI_DEFAULT_FREQ, MSBFIRST, SPI_MODE0));
   digitalWrite(_cs, LOW);
 
   digitalWrite(_dc, LOW);
-  //SPI.transfer(commandByte);
   sendSpi(commandByte);
 
   digitalWrite(_dc, HIGH);
-  for (int i = 0; i < numDataBytes; i++) {
-    //if ((connection == TFT_PARALLEL) && tft8.wide) {
-    //  SPI_WRITE16(*(uint16_t *)dataBytes);
-    //  dataBytes += 2;
-    //} else {
-      //SPI.transfer(pgm_read_byte(dataBytes++));
+  for (int i = 0; i < numDataBytes; i++)
+  {
       sendSpi(pgm_read_byte(dataBytes++));
-    //}
   }
   digitalWrite(_cs, HIGH);
-  //SPI.endTransaction();
 }
 
 /*******************SUPER ULTRA LOW LEVEL STUFF, DO NOT TOUCH!*********************/
@@ -346,7 +247,7 @@ void Adafruit_ILI9341::sendSpi(uint8_t _data)
     HAL_SPI_Transmit(&hspi1, &_data, 1, HAL_MAX_DELAY);
 }
 
-void Adafruit_ILI9341::sendSpiDMA(uint8_t *_data, uint16_t _size)
+void Adafruit_ILI9341::sendSpiBuffer(uint8_t *_data, uint16_t _size)
 {
     intFlag = false;
     HAL_SPI_Transmit_IT(&hspi1, _data, _size);
