@@ -100,11 +100,26 @@
 static void MX_SPI1_Init(void);
 static void MX_DMA_Init(void);
 static uint8_t _frameBuffer[153600];
+static SPI_HandleTypeDef hspi1;
+static DMA_HandleTypeDef hdma_spi1_tx;
+static volatile bool intFlag = false;
+
+__attribute__ ((section(".RamFunc"))) static void sendSpiBuffer(uint8_t *_data, uint16_t _size)
+{
+    //intFlag = false;
+    
+    //HAL_SPI_Transmit(&hspi1, _data, _size, 1000UL);
+    HAL_SPI_Transmit_DMA(&hspi1, _data, _size);
+    delayMicroseconds(3300);
+    //while(!intFlag);
+    //intFlag = false;
+    //delay(10);
+
+}
 
 class Adafruit_ILI9341 : public Adafruit_GFX{
     public:
         Adafruit_ILI9341(int8_t _CS, int8_t _DC);
-
         void    begin();
         void    setRotation(uint8_t r);
         void    invertDisplay(bool i);
@@ -125,7 +140,7 @@ class Adafruit_ILI9341 : public Adafruit_GFX{
         void    sendCommand(uint8_t commandByte, const uint8_t *dataBytes = NULL, uint8_t numDataBytes = 0);
         
         void    sendSpi(uint8_t _data);
-        void    sendSpiBuffer(uint8_t *_data, uint16_t _size);
+        //void    sendSpiBuffer(uint8_t *_data, uint16_t _size);
         
         private:
         int8_t _cs, _dc;

@@ -19,10 +19,6 @@
 #define MADCTL_BGR 0x08  ///< Blue-Green-Red pixel order
 #define MADCTL_MH  0x04  ///< LCD refresh right to left
 
-static SPI_HandleTypeDef hspi1;
-static DMA_HandleTypeDef hdma_spi1_tx;
-static volatile bool intFlag = false;
-
 Adafruit_ILI9341::Adafruit_ILI9341(int8_t _CS, int8_t _DC) : Adafruit_GFX(ILI9341_TFTWIDTH, ILI9341_TFTHEIGHT)
 {
     _dc = _DC;
@@ -59,6 +55,9 @@ static const uint8_t PROGMEM initcmd[] = {
 
 void Adafruit_ILI9341::begin()
 {
+    Serial.println((unsigned long)(_frameBuffer));
+
+
     MX_DMA_Init();
     MX_SPI1_Init();
     initSPI();
@@ -252,13 +251,6 @@ void Adafruit_ILI9341::sendSpi(uint8_t _data)
     HAL_SPI_Transmit(&hspi1, &_data, 1, HAL_MAX_DELAY);
 }
 
-void Adafruit_ILI9341::sendSpiBuffer(uint8_t *_data, uint16_t _size)
-{
-    intFlag = false;
-    HAL_SPI_Transmit_IT(&hspi1, _data, _size);
-    while(!intFlag);
-    intFlag = false;
-}
 
 /*******************STM32 HAL STUFF*********************/
 static void MX_SPI1_Init(void)
